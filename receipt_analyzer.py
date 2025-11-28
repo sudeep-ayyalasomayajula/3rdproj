@@ -65,8 +65,9 @@ if api_key:
             st.json(json_data)
             
             # Example of how you could use this data in code:
-            st.write(f"You spent ${json_data['total_amount']} at {json_data['merchant_name']}.")
+            #st.write(f"You spent ${json_data['total_amount']} at {json_data['merchant_name']}.")
 
         except json.JSONDecodeError:
             st.error("Error: The AI did not return valid JSON. Here is the raw output:")
             st.text(response.text)
+
