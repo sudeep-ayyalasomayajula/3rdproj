@@ -1,5 +1,6 @@
 import streamlit as st
 import google.generativeai as genai
+import re  # Standard library for "Regular Expressions" (text pattern matching)
 # 1. NEW LIBRARY: Pillow (PIL) for image handling
 from PIL import Image
 import json
@@ -55,22 +56,36 @@ if api_key:
         with st.spinner("Extracting data..."):
             response = model.generate_content([prompt, image])
             
-        # 8. PROCESSING THE RESPONSE
+        # 8. PROCESSING THE RESPONSE (ROBUST VERSION)
         try:
-            # The AI returns a string. We try to parse it into a Python dictionary using the built-in json library.
-            # .strip() removes any accidental whitespace at the start/end.
-            json_data = json.loads(response.text.strip())
+            # 1. Get the raw text
+            raw_text = response.text
+            
+            # 2. Use Regex to find the JSON content inside the markdown
+            # This pattern looks for: ```json (optional) ... content ... ```
+            json_match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", raw_text)
+            
+            if json_match:
+                # If we found a markdown block, extract just the content inside
+                clean_json_str = json_match.group(1)
+            else:
+                # If no markdown, assume the whole text is JSON
+                clean_json_str = raw_text
+
+            # 3. specific cleanup for any trailing commas (common AI error)
+            # This is optional but helpful for stability
+            clean_json_str = clean_json_str.strip()
+
+            # 4. Parse the cleaned string
+            json_data = json.loads(clean_json_str)
             
             st.success("Data Extracted Successfully!")
-            
-            # Displaying as formatted JSON
             st.json(json_data)
-            
-            # Example of how you could use this data in code:
-            #st.write(f"You spent ${json_data['total_amount']} at {json_data['merchant_name']}.")
 
-        except json.JSONDecodeError:
-            st.error("Error: The AI did not return valid JSON. Here is the raw output:")
-            st.text(response.text)
+        except json.JSONDecodeError as e:
+            st.error(f"Failed to parse JSON even after cleaning.")
+            st.warning(f"Error details: {e}")
+            st.text("Raw AI Output was:")
+            st.code(response.text)
 
 
