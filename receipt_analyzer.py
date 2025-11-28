@@ -49,6 +49,8 @@ if api_key:
         # Note: We pass a LIST [prompt, image]. The model can handle both at once.
         # gemini-2.5-flash is excellent at vision tasks.
         model = genai.GenerativeModel('gemini-2.5-flash')
+        # This line forces the AI to ONLY return JSON, no markdown wrapper
+        generation_config={"response_mime_type": "application/json"}    
         
         with st.spinner("Extracting data..."):
             response = model.generate_content([prompt, image])
@@ -70,4 +72,5 @@ if api_key:
         except json.JSONDecodeError:
             st.error("Error: The AI did not return valid JSON. Here is the raw output:")
             st.text(response.text)
+
 
